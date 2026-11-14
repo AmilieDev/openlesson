@@ -1,0 +1,19 @@
+[
+    {
+        "match": {
+            "cpuBrandContains": ["AMD Ryzen"],
+            "formFactor": "desktop"
+        },
+            "preset": "amd-ryzen-desktop",
+            "show": ["ACPI", "Booter/Quirks", "Kernel/Quirks"]
+        },
+        
+        {
+        "match": {
+            "cpuBrandContains": ["i7-7700 ", "i7-7700K "],
+            "formFactor": "desktop"
+        },
+        "preset": "intel-kaby-lake-desktop",
+        "show": ["ACPI", "Booter/Quirks", "Kernel/Quirks"]
+    }
+]
