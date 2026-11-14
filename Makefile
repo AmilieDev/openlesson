@@ -12,7 +12,7 @@ endif
 
 CXXFLAGS ?= -std=c++17 -Wall -Wextra -g
 
-.PHONY: base-build next-build
+.PHONY: base-build next-build clean
 
 base-build:
 	mkdir -p outputs/OLB
@@ -21,3 +21,6 @@ base-build:
 next-build:
 	mkdir -p outputs/NEXT
 	$(CXX) $(CXXFLAGS) $$(find "$(NEXT_SRC)" -name '*.cpp') -o "outputs/NEXT/openlesson-next$(EXE)"
+	
+clean:
+	rm -fr ./outputs

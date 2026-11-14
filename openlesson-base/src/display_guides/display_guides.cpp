@@ -1,4 +1,4 @@
-#include "display_acpi_guide.h"
+#include "display_guides.h"
 
 #include <filesystem>
 #include <fstream>
@@ -7,7 +7,7 @@
 #include <string>
 #include <algorithm>
 
-void display_acpi_guide(const std::filesystem::path& docs, const std::string& cpu_brand, const std::string& form_factor){
+void display_guide(const std::filesystem::path& docs, const std::string& cpu_brand, const std::string& form_factor, const std::string& guide_type){
     std::ifstream index(docs / "cpu_families.json");
     if(!index){
         std::cerr << "Couldn't open cpu_families.json. Ensure you have docs with your build of the program please.";
@@ -16,6 +16,7 @@ void display_acpi_guide(const std::filesystem::path& docs, const std::string& cp
     
     try {
         const auto profiles = nlohmann::json::parse(index);
+        std::string filename;
 
         for (const auto& profile : profiles) {
             const auto& match = profile.at("match");
@@ -35,7 +36,19 @@ void display_acpi_guide(const std::filesystem::path& docs, const std::string& cp
             }
             
             const auto preset = profile.at("preset").get<std::string>();
-            const auto path = docs / "known_guides" / preset / "acpi.md";
+            
+            if (guide_type == "acpi") {
+            filename = "acpi.md";
+            } else if (guide_type == "kernquirk") {
+                filename = "kernel_quirks.md";
+            } else if (guide_type == "bootquirk") {
+                filename = "booter_quirks.md";
+            } else {
+                std::cerr << "Unknown guide type: " << guide_type << '\n';
+                return;
+            }
+
+            const auto path = docs / "known_guides" / preset / filename;
             std::ifstream guide(path);
 
             if (!guide) {
@@ -43,7 +56,7 @@ void display_acpi_guide(const std::filesystem::path& docs, const std::string& cp
                 return;
             }
 
-            std::cout << guide.rdbuf();
+            std::cout << guide.rdbuf() << '\n';
             return;
         }
 
