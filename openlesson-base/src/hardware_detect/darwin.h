@@ -1,6 +1,8 @@
-#ifndef DARWIN_HW_CHECK
-#define DARWIN_HW_CHECK
+#ifndef DARWIN_HW_CHECK_H
+#define DARWIN_HW_CHECK_H
 
-int darwin_hw_check(void);
+#include <string>
+
+int darwin_hw_check(std::string& cpu_brand);
 
 #endif

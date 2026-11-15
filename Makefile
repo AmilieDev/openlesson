@@ -11,12 +11,15 @@ else
 endif
 
 CXXFLAGS ?= -std=c++17 -Wall -Wextra -g
+QT_CMAKE ?= qt-cmake
+
 
 .PHONY: base-build next-build clean
 
 base-build:
 	mkdir -p outputs/OLB
-	$(CXX) $(CXXFLAGS) -Iopenlesson-base/include $$(find "$(BASE_SRC)" -name '*.cpp') -o "outputs/OLB/openlesson-base$(EXE)"
+	"$(QT_CMAKE)" -S . -B outputs/OLB
+	cmake --build outputs/OLB
 
 next-build:
 	mkdir -p outputs/NEXT

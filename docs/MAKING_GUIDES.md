@@ -20,4 +20,4 @@ In that vain, you should also add a new folder matching the name of the "preset"
 THEY MUST GO BY THIS NAME OR THEY WILL NOT WORK.
 
 In there, using Markdown format the guides to follow the standard formatitng of the rest of the application - see amd-ryzen-desktop and its guides for inspiration / an example.
-Do NOT modify "generic". Generic is the initial guide instances we utilize for general setup steps, such as downloading the macOS recovery environment and post setup preparation.
+Do NOT modify "guides" contents. The folder GUIDES is the initial guide instances we utilize for general setup steps, such as downloading the macOS recovery environment and post setup preparation.

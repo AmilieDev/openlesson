@@ -1,8 +1,14 @@
 #include <iostream>
 
+#include <QApplication>
+#include <QMainWindow>
+#include "gui/gui_init.h"
+
 #include "hardware_detect/darwin.h"
 #include "hardware_detect/linux_bsd.h"
 #include "hardware_detect/nt.h"
+
+#include <string>
 
 #if defined(WIN64)
     #define OS_TYPE "winnt"
@@ -14,18 +20,24 @@
     #define OS_TYPE "freebsd"
 #endif
 
-int main(){
-    if(strcmp(OS_TYPE, "winnt") == 0){
-        std::cout << "[OS CHECK] Compiling for Windows\n";
-    }else if(strcmp(OS_TYPE, "macos") == 0){
-        std::cout << "[OS CHECK] Compiling for macOS\n";
-        darwin_hw_check();
-    }else if(strcmp(OS_TYPE, "linux") == 0){
-        std::cout << "[OS CHECK] Compiling for Linux\n";
-    }else if(strcmp(OS_TYPE, "freebsd") == 0){
-        std::cout << "[OS CHECK] Compiling for FreeBSD via Linux instructions.\n";
-    }
+int main(int argc, char* argv[]){
+    QApplication app(argc, argv);
     
-    std::cout << "[OpenLesson BASE] Application Compiled Successfully.\n";
-    return 0;
+    std::string cpu_brand;
+    
+    #if defined(_WIN32)
+        std::cout << "[OS CHECK] Windows\n";
+    #elif defined(__APPLE__)
+        std::cout << "[OS CHECK] macOS\n";
+        darwin_hw_check(cpu_brand);
+    #elif defined(__linux__)
+        std::cout << "[OS CHECK] Linux\n";
+    #elif defined(__FreeBSD__)
+        std::cout << "[OS CHECK] FreeBSD\n";
+    #endif
+    
+    QMainWindow window;
+    build_main_window(window, cpu_brand);
+    window.show();
+    return app.exec();
 }

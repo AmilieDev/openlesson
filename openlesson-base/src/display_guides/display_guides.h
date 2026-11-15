@@ -1,9 +1,9 @@
-#ifndef DISPLAY_ACPI_GUIDE
-#define DISPLAY_ACPI_GUIDE
+#ifndef DISPLAY_ACPI_GUIDE_H
+#define DISPLAY_ACPI_GUIDE_H
 
 #include <filesystem>
 #include <string>
 
-void display_guide(const std::filesystem::path& docs, const std::string& cpu_brand, const std::string& form_factor, const std::string& guide_type);
+std::string find_guide_preset(const std::filesystem::path& docs, const std::string& cpu_brand, const std::string& form_factor);
 
 #endif
