@@ -1,12 +1,15 @@
 #include "gui_init.h"
 
+#include "../display_guides/display_guides.h"
 #include "../plist_editor/config_document.h"
+#include "../resource_paths.h"
 #include "config_editor.h"
 #include "guide_panel.h"
 #include "sidebar.h"
-#include "../display_guides/display_guides.h"
 
+#include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidget>
@@ -15,13 +18,14 @@
 #include <QStackedWidget>
 #include <QString>
 #include <QWidget>
-#include <QDir>
-#include <QFileInfo>
-#include <QTreeWidget>
+
+#include <filesystem>
 
 void build_main_window(QMainWindow& window, const std::string& cpu_brand){
-    const char* docs_path = "openlesson-base/docs";
-    const QString docs_dir = QString::fromUtf8(docs_path);
+    const QDir resources = resource_root();
+    const QDir docs(resources.filePath("docs"));
+    const QString docs_dir = docs.absolutePath();
+    const auto docs_path = std::filesystem::u8path(docs_dir.toUtf8().constData());
 
     auto* root = new QWidget(&window);
     auto* layout = new QHBoxLayout(root);
@@ -37,8 +41,8 @@ void build_main_window(QMainWindow& window, const std::string& cpu_brand){
 
     const auto guide = build_guide_panel(splitter, docs_dir);
     const auto editor = build_config_editor(splitter);
-    
-    const QString default_path = QDir(docs_dir).filePath("default.plist");
+
+    const QString default_path = docs.filePath("default.plist");
     const bool has_saved_config = QFileInfo::exists(config_output_path());
 
     QDomDocument document;
@@ -59,7 +63,8 @@ void build_main_window(QMainWindow& window, const std::string& cpu_brand){
     splitter->addWidget(editor.panel);
     splitter->setSizes({440, 485});
 
-    QObject::connect(sidebar.navigation, &QListWidget::currentRowChanged, guide.pages, &QStackedWidget::setCurrentIndex);
+    QObject::connect(sidebar.navigation, &QListWidget::currentRowChanged,
+                     guide.pages, &QStackedWidget::setCurrentIndex);
 
     if(!cpu_brand.empty()){
         sidebar.cpu_label->setText(QString::fromStdString(cpu_brand).trimmed());
@@ -67,10 +72,9 @@ void build_main_window(QMainWindow& window, const std::string& cpu_brand){
 
     const auto preset = find_guide_preset(docs_path, cpu_brand, "desktop");
     load_efi_guide(*guide.efi_guide, docs_dir, QString::fromStdString(preset));
-
     sidebar.navigation->setCurrentRow(1);
 
-    QFile stylesheet("openlesson-base/src/gui/everforest.qss");
+    QFile stylesheet(resources.filePath("everforest.qss"));
     if(stylesheet.open(QIODevice::ReadOnly)){
         window.setStyleSheet(QString::fromUtf8(stylesheet.readAll()));
     }

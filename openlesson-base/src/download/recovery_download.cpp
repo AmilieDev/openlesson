@@ -1,5 +1,7 @@
 #include "recovery_download.h"
 
+#include "../resource_paths.h"
+
 #include <QDir>
 #include <QFileInfo>
 #include <QLabel>
@@ -48,7 +50,7 @@ QObject::connect(hide_timer, &QTimer::timeout, panel, &QWidget::hide);
     const QString output = QDir::home().filePath("OLB/com.apple.recovery.boot");
 
     QObject::connect(button, &QPushButton::clicked, panel, [process, button, status, log, output](){
-        const QFileInfo script("openlesson-base/tools/macrecovery/macrecovery.py");
+        const QFileInfo script(resource_root().filePath("tools/macrecovery/macrecovery.py"));
 
         if(!script.isFile()){
             status->setText("Could not find " + script.absoluteFilePath());

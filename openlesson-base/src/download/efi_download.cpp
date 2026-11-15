@@ -1,5 +1,7 @@
 #include "efi_download.h"
 
+#include "../resource_paths.h"
+
 #include <QDir>
 #include <QFileInfo>
 #include <QLabel>
@@ -52,7 +54,8 @@ QWidget* build_efi_download(QWidget* parent){
     const QString output = QDir::home().filePath("OLB/EFI");
 
     QObject::connect(button, &QPushButton::clicked, panel, [process, button, status, log, output](){
-        const QFileInfo script("openlesson-base/tools/prepare_efi/prepare_efi.py");
+        const QFileInfo script(resource_root().filePath("tools/prepare_efi/prepare_efi.py"));
+        
         if(!script.isFile()){
             status->setText("Could not find " + script.absoluteFilePath());
             return;

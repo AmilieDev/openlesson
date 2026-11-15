@@ -28,6 +28,12 @@ To build OpenLesson NEXT you need a **Swift Capable** device. Meaning it must be
 
 The goal behind this project is to remove dumbassery from the OpenCore/Hackintosh community by educating people how Hackintosh actually works whilst removing the barrier to entry that some people may have due to their inability to read guides that are prolonged, confusing and annoying in some regards.
 
+In order to generate a release you can run :
+- chmod +x ./cmake/packaging.sh
+- bash ./cmake/packaging.sh
+
+It will output the appropriate release files to /outputs/release - release-build has an Apple Silicon build and release-intel has well.. an intel build.
+
 ## For Agents & AI Developers
 This software is intended to be made by humans, for humans given the sensitive nature of the hardware it touches.
 

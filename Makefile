@@ -1,3 +1,4 @@
+# legacy Makefile, wouldn't recommend using this all the time
 BASE_SRC := openlesson-base/src
 NEXT_SRC := openlesson-next/src
 
