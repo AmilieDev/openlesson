@@ -5,6 +5,6 @@
 
 class QMainWindow;
 
-void build_main_window(QMainWindow& window, const std::string& cpu_brand);
+void build_main_window(QMainWindow& window, std::string& cpu_brand);
 
 #endif

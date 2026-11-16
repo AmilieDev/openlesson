@@ -24,7 +24,8 @@ sidebar_widgets build_sidebar(QWidget* parent){
         "Downloading macOS",
         "Preparing your EFI",
         "Preparing to reboot",
-        "Troubleshooting"
+        "Troubleshooting",
+        "Hardware Library"
     });
     layout->addWidget(navigation, 1);
     
