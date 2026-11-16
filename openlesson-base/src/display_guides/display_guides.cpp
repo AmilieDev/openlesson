@@ -24,9 +24,26 @@ std::string find_guide_preset(const std::filesystem::path& docs, const std::stri
 
         for(const auto& profile : profiles){
             const auto& match = profile.at("match");
-            if(match.at("formFactor") != form_factor){
-                continue;
+            const auto& formFactors = match.at("formFactor");
+
+            bool formFactorMatches = false;
+
+            if (formFactors.is_string()) {
+                formFactorMatches =
+                    formFactors.get<std::string>() == form_factor;
+            } else if (formFactors.is_array()) {
+                formFactorMatches = std::any_of(
+                    formFactors.begin(),
+                    formFactors.end(),
+                    [&](const auto& factor) {
+                        return factor.template get<std::string>() == form_factor;
+                    }
+                );
             }
+
+        if (!formFactorMatches) {
+            continue;
+        }
 
             for(const auto& entry : match.at("cpuBrandContains")){
                 const auto pattern = entry.get<std::string>();
