@@ -81,7 +81,10 @@ void load_efi_guide(QTextBrowser& page, const QString& docs_dir, const QString& 
         "acpi.md",
         "gathering_kexts.md",
         "booter_quirks.md",
-        "kernel_quirks.md"
+        "kernel_quirks.md",
+        "misc.md",
+        "nvram.md",
+        "platform_info.md"
     };
 
     QStringList sections;
