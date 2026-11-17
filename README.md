@@ -5,6 +5,7 @@ OpenLesson is an educative OpenCore builder which educates you on how to create 
 OpenLesson detects your hardware and then filters the guides properly whilst also letting you know if it is unsupported or not. OpenLesson has a macOS counterpart application which will aid you in maintaining your device, updating to Golden Gate in the future via NullMoth's work or Stela and installing NullMoth's NVIDIA driver.
 
 ## IMPORTANT NOTE REGARDING NVIDIA:
+!! UNSUPPORTED CURRENTLY - NVIDIA IS NOT YET SUPPORTED !!
 In order to detect NVIDIA GPU's OpenLesson will need to be run on **WINDOWS** or **LINUX** first BEFORE you boot into macOS. You can then follow the guide from macOS via a flag that OpenLesson will put ONTO your USB drive which OpenLesson NEXT will pickup and walk you through NVIDIA driver installation.
 
 If you do run OpenLesson Base on macOS for your device for some goddarn reason - add the following file to the base of your EFI: .is_openlesson_nvidia

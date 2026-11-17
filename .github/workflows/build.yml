@@ -1,4 +1,3 @@
-
 name: OpenLesson BASE Builds
 
 on:
@@ -11,18 +10,17 @@ jobs:
   build:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
-
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: Windows-x64
             os: windows-2022
-
           - name: Linux-x64
             os: ubuntu-22.04
-
-          - name: macOS
+          - name: macOS-Intel
+            os: macos-15-intel
+          - name: macOS-AppleSilicon
             os: macos-15
 
     steps:
@@ -48,9 +46,206 @@ jobs:
       - name: Deploy portable application
         run: cmake --install build --config Release
 
-      - name: Upload portable build
+      - name: Make Windows single-file EXE
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $extra = Join-Path $env:RUNNER_TEMP 'lzma-sdk.7z'
+          Invoke-WebRequest 'https://www.7-zip.org/a/lzma2301.7z' -OutFile $extra
+          $sfxDir = Join-Path $env:RUNNER_TEMP 'lzma-sdk'
+          New-Item -ItemType Directory -Force $sfxDir | Out-Null
+          7z x $extra "-o$sfxDir" -y | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot extract LZMA SDK' }
+          $sfx = Get-ChildItem $sfxDir -Recurse -File |
+            Where-Object { $_.Name -in @('7zSD.sfx', '7zS2.sfx') } |
+            Select-Object -First 1
+          if (-not $sfx) { throw 'Installer SFX module not found in LZMA SDK' }
+          $exe = Get-ChildItem portable/bin -Filter '*openlesson*.exe' | Select-Object -First 1
+          if (-not $exe) { throw 'OpenLesson executable not found' }
+          $config = @"
+          ;!@Install@!UTF-8!
+          Title="OpenLesson"
+          RunProgram="bin\$($exe.Name)"
+          ;!@InstallEnd@!
+          "@
+          [IO.File]::WriteAllText((Join-Path $PWD 'sfx-config.txt'), $config + "`n", (New-Object System.Text.UTF8Encoding($false)))
+          Push-Location portable
+          7z a -t7z -mx=9 "$env:GITHUB_WORKSPACE/payload.7z" .\* | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw '7-Zip archive creation failed' }
+          Pop-Location
+          $out = Join-Path $PWD 'dist/OpenLesson-Windows-x64.exe'
+          $stream = [IO.File]::Create($out)
+          try {
+            foreach ($path in @($sfx.FullName, (Join-Path $PWD 'sfx-config.txt'), (Join-Path $PWD 'payload.7z'))) {
+              $inputStream = [IO.File]::OpenRead($path)
+              try { $inputStream.CopyTo($stream) } finally { $inputStream.Dispose() }
+            }
+          } finally { $stream.Dispose() }
+          if ((Get-Item $out).Length -lt 100000) { throw 'Unexpectedly small Windows output' }
+
+      - name: Make Linux AppImage
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/scalable/apps
+          cp -a portable/bin/. AppDir/usr/bin/
+          if [ -d portable/share ]; then cp -a portable/share AppDir/usr/; fi
+          if [ -d portable/lib ]; then cp -a portable/lib AppDir/usr/; fi
+
+          cat > AppDir/usr/share/applications/openlesson.desktop <<'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=OpenLesson
+          Exec=openlesson-base
+          Icon=openlesson
+          Categories=Development;Education;
+          Terminal=false
+          EOF
+
+          # AppImages REQUIRE icons, so yeah - heres the temporary icon. Gonna make a proper icon in IconComposer at some point
+          cat > AppDir/usr/share/icons/hicolor/scalable/apps/openlesson.svg <<'EOF'
+          <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+            <rect width="256" height="256" rx="48" fill="#2d4b40"/>
+            <rect x="48" y="48" width="160" height="160" rx="22" fill="#a7c080"/>
+            <path d="M83 88h90v13H83zm0 29h90v13H83zm0 29h65v13H83z" fill="#2d4b40"/>
+          </svg>
+          EOF
+
+          curl -fL --retry 3 -o linuxdeploy.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          curl -fL --retry 3 -o linuxdeploy-plugin-qt.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy.AppImage linuxdeploy-plugin-qt.AppImage
+          export PATH="$PWD:$PATH"
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          export OUTPUT="$PWD/dist/OpenLesson-Linux-x86_64.AppImage"
+          if command -v qmake6 >/dev/null 2>&1; then
+            export QMAKE="$(command -v qmake6)"
+          elif command -v qmake >/dev/null 2>&1; then
+            export QMAKE="$(command -v qmake)"
+          fi
+          ./linuxdeploy.AppImage \
+            --appdir AppDir \
+            --executable AppDir/usr/bin/openlesson-base \
+            --desktop-file AppDir/usr/share/applications/openlesson.desktop \
+            --icon-file AppDir/usr/share/icons/hicolor/scalable/apps/openlesson.svg \
+            --plugin qt --output appimage
+          test -s "$OUTPUT"
+
+      - name: Upload Windows single EXE
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenLesson-Windows-x64
+          path: dist/*.exe
+          if-no-files-found: error
+
+      - name: Upload Linux AppImage
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenLesson-Linux-x64
+          path: dist/*.AppImage
+          if-no-files-found: error
+
+      - name: Archive macOS bundle with metadata intact
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -x portable/OpenLesson.app/Contents/MacOS/OpenLesson
+          tar -C portable -czf OpenLesson-${{ matrix.name }}.tar.gz OpenLesson.app
+
+      - name: Upload macOS tarball for merging
+        if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
           name: OpenLesson-${{ matrix.name }}
-          path: portable/
+          path: OpenLesson-${{ matrix.name }}.tar.gz
+          if-no-files-found: error
+
+  macos-universal:
+    name: macOS Universal
+    needs: build
+    runs-on: macos-15
+    steps:
+      - name: Download Intel app archive
+        uses: actions/download-artifact@v4
+        with:
+          name: OpenLesson-macOS-Intel
+          path: incoming/intel
+
+      - name: Download Apple Silicon app archive
+        uses: actions/download-artifact@v4
+        with:
+          name: OpenLesson-macOS-AppleSilicon
+          path: incoming/arm
+
+      - name: Restore app bundles and verify permissions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p intel arm dist
+          tar -xzf incoming/intel/OpenLesson-macOS-Intel.tar.gz -C intel
+          tar -xzf incoming/arm/OpenLesson-macOS-AppleSilicon.tar.gz -C arm
+          test -x intel/OpenLesson.app/Contents/MacOS/OpenLesson
+          test -x arm/OpenLesson.app/Contents/MacOS/OpenLesson
+          ditto arm/OpenLesson.app dist/OpenLesson.app
+
+      - name: Merge into Universal 2 app
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          intel = Path('intel/OpenLesson.app')
+          arm = Path('arm/OpenLesson.app')
+          output = Path('dist/OpenLesson.app')
+
+          def archs(path):
+              result = subprocess.run(['lipo', '-archs', str(path)], capture_output=True, text=True)
+              return set(result.stdout.split()) if result.returncode == 0 else set()
+
+          merged = 0
+          for file in intel.rglob('*'):
+              if not file.is_file() or file.is_symlink():
+                  continue
+              rel = file.relative_to(intel)
+              counterpart = arm / rel
+              target = output / rel
+              intel_arch = archs(file)
+              if not intel_arch:
+                  continue
+              if not counterpart.is_file() or counterpart.is_symlink():
+                  raise SystemExit(f'Missing ARM binary: {rel}')
+              arm_arch = archs(counterpart)
+              if {'arm64', 'x86_64'} <= arm_arch:
+                  continue
+              if 'x86_64' not in intel_arch or 'arm64' not in arm_arch:
+                  raise SystemExit(f'Architecture mismatch: {rel}: {intel_arch} / {arm_arch}')
+              subprocess.run(['lipo', '-create', str(file), str(counterpart), '-output', str(target)], check=True)
+              merged += 1
+
+          exe = output / 'Contents/MacOS/OpenLesson'
+          if not {'arm64', 'x86_64'} <= archs(exe):
+              raise SystemExit('Main executable is not Universal 2')
+          print(f'Merged {merged} Mach-O files')
+          PY
+          
+          chmod +x dist/OpenLesson.app/Contents/MacOS/OpenLesson
+          codesign --force --deep --sign - dist/OpenLesson.app
+          codesign --verify --deep --strict --verbose=2 dist/OpenLesson.app
+          lipo -archs dist/OpenLesson.app/Contents/MacOS/OpenLesson
+          ditto -c -k --sequesterRsrc --keepParent dist/OpenLesson.app dist/OpenLesson-macOS-Universal.zip
+
+      - name: Upload Universal macOS app
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenLesson-macOS-Universal
+          path: dist/OpenLesson-macOS-Universal.zip
           if-no-files-found: error
