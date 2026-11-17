@@ -1,2 +1,2 @@
-# Gathering Kexts
-straight up kexting it
+# Modifying other devices
+You can however use your Apple Silicon device for making a different EFI for another device. On the left of your screen, select "Hardware Library" and choose the CPU of the device you are targetting.

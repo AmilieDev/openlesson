@@ -1,0 +1,2 @@
+# Apple Silicon Devices
+You do not need to use this application to modify an Apple Silicon device at current. If you'd like to modify your Mac via OpenLesson, I'd recommend OpenLesson NEXT. OpenLesson NEXT is the macOS companion app to OpenLesson BASE which comes with a bunch of handy utilities for Hackitosh devices running Tahoe and Golden Gate + regular Mac devices (MacBooks, Mac Minis, Mac Studios etc)!

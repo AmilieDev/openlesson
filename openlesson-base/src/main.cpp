@@ -4,38 +4,35 @@
 #include <QMainWindow>
 #include "gui/gui_init.h"
 
+#if defined(__APPLE__)
 #include "hardware_detect/darwin.h"
-#include "hardware_detect/linux_bsd.h"
+#elif defined(_WIN32)
 #include "hardware_detect/nt.h"
+#elif defined(__linux__) || defined(__FreeBSD__) || \
+      defined(__OpenBSD__) || defined(__NetBSD__)
+#include "hardware_detect/linux_bsd.h"
+#endif
 
 #include <string>
-
-#if defined(WIN64)
-    #define OS_TYPE "winnt"
-#elif __APPLE__
-    #define OS_TYPE "macos"
-#elif defined(__linux__)
-    #define OS_TYPE "linux"
-#elif defined(__FreeBSD__)
-    #define OS_TYPE "freebsd"
-#endif
 
 int main(int argc, char* argv[]){
     QApplication app(argc, argv);
     
     std::string cpu_brand;
+    int result = 1;
     
-    #if defined(_WIN32)
-        std::cout << "[OS CHECK] Windows\n";
-    #elif defined(__APPLE__)
-        std::cout << "[OS CHECK] macOS\n";
-        darwin_hw_check(cpu_brand);
-    #elif defined(__linux__)
-        std::cout << "[OS CHECK] Linux\n";
-    #elif defined(__FreeBSD__)
-        std::cout << "[OS CHECK] FreeBSD\n";
+    #if defined(__APPLE__)
+        result = darwin_hw_check(cpu_brand);
+    #elif defined(_WIN32)
+        result = nt_hw_check(cpu_brand);
+    #elif defined(__linux__) || defined(__FreeBSD__) || \
+          defined(__OpenBSD__) || defined(__NetBSD__)
+        result = linux_bsd_hw_check(cpu_brand);
+    #else
+        std::cerr << "Unsupported operating system\n";
+        return 1;
     #endif
-    
+
     QMainWindow window;
     build_main_window(window, cpu_brand);
     window.show();
